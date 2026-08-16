@@ -15,7 +15,9 @@ export const KIND_LABEL: Record<TaskKind, string> = {
   field: "Field work", eng: "Engineering", qa: "QA / inspection", docs: "Documentation",
 };
 
-export function GanttChart({ tasks }: { tasks: Task[] }) {
+export function GanttChart({ tasks, onSelect, selectedId }: {
+  tasks: Task[]; onSelect?: (id: string) => void; selectedId?: string | null;
+}) {
   const today = useMemo(() => new Date(), []);
   const win = GANTT_WINDOW;
   const width = LABEL_W + win.days * DAY_W;
@@ -54,12 +56,15 @@ export function GanttChart({ tasks }: { tasks: Task[] }) {
             const prj = PROJECTS.find((p) => p.code === task.prj);
             const left = (task.start - win.start) * DAY_W;
             const wd = Math.max(task.ms ? 0 : 1, task.dur) * DAY_W;
+            const isSel = selectedId === task.id;
             return (
-              <div key={task.id} className="rowline relative flex border-b border-line/40 group" style={{ height: ROW_H }}>
+              <div key={task.id} onClick={onSelect ? () => onSelect(task.id) : undefined}
+                className={`rowline relative flex border-b group ${isSel ? "bg-amberx/6" : "border-line/40"} ${onSelect ? "cursor-pointer" : ""}`}
+                style={{ height: ROW_H, boxShadow: isSel ? "inset 2px 0 0 #ffb224" : undefined }}>
                 <div className="sticky left-0 z-[6] flex items-center gap-2 px-3 border-r border-line bg-[#0e1626]/95 backdrop-blur-sm shrink-0"
                   style={{ width: LABEL_W }}>
                   <span className="w-1.5 h-1.5 flex-none" style={{ background: prj?.color ?? "#94a4c0" }} />
-                  <span className="truncate text-[12px] text-mist group-hover:text-fog transition-colors" title={task.name}>{task.name}</span>
+                  <span className={`truncate text-[12px] transition-colors ${isSel ? "text-amberx font-medium" : "text-mist group-hover:text-fog"}`} title={task.name}>{task.name}</span>
                 </div>
                 <div className="relative flex-none" style={{ width: win.days * DAY_W }}>
                   {ticks.map((tk) => (

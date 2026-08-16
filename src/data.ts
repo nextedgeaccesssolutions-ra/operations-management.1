@@ -313,17 +313,30 @@ function genCurve(progress: number, status: ProjectStatus, seed: number, weeks =
   return { weeks, curWeek, planned, actual, forecast };
 }
 
-export const SCURVES: Record<string, SCurveData> = {
-  "PRJ-014": genCurve(68, "on-track", 11),
-  "PRJ-021": genCurve(41, "at-risk", 23),
-  "PRJ-027": genCurve(82, "on-track", 37),
-  "PRJ-033": genCurve(27, "delayed", 51),
-  "PRJ-036": genCurve(55, "on-track", 67),
-  "PRJ-041": genCurve(12, "planning", 83),
-};
+const CURVE_DEFS: { code: string; progress: number; status: ProjectStatus; seed: number }[] = [
+  { code: "PRJ-014", progress: 68, status: "on-track", seed: 11 },
+  { code: "PRJ-021", progress: 41, status: "at-risk", seed: 23 },
+  { code: "PRJ-027", progress: 82, status: "on-track", seed: 37 },
+  { code: "PRJ-033", progress: 27, status: "delayed", seed: 51 },
+  { code: "PRJ-036", progress: 55, status: "on-track", seed: 67 },
+  { code: "PRJ-041", progress: 12, status: "planning", seed: 83 },
+];
 
-export function portfolioCurve(codes: string[]): SCurveData {
-  const list = codes.map((c) => SCURVES[c]);
+export const SCURVES: Record<string, SCurveData> = Object.fromEntries(
+  CURVE_DEFS.map((d) => [d.code, genCurve(d.progress, d.status, d.seed)]),
+);
+
+/** Curve with certified-progress edits applied (regenerated deterministically). */
+export function getCurve(code: string, edits?: Record<string, number>): SCurveData {
+  const def = CURVE_DEFS.find((d) => d.code === code);
+  if (!def) return SCURVES[code];
+  const p = edits?.[code];
+  if (p == null) return SCURVES[code];
+  return genCurve(Math.max(0, Math.min(100, p)), def.status, def.seed);
+}
+
+export function portfolioCurve(codes: string[], edits?: Record<string, number>): SCurveData {
+  const list = codes.map((c) => getCurve(c, edits));
   const weeks = list[0].weeks;
   const avg = (arr: (number | null)[][]) =>
     Array.from({ length: weeks + 1 }, (_, w) => {

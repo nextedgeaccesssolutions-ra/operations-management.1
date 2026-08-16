@@ -15,6 +15,10 @@ export interface Report {
   coords: string; queued: boolean; summary: string;
 }
 
+export interface TaskPatch { start?: number; dur?: number; prog?: number; }
+export interface ModulePatch { name?: string; desc?: string; steps?: string[]; }
+interface PendingEdit<T> { patch: T; requestedBy: string; role: Role; ts: number; approvalId: string; }
+
 interface Persist {
   role: Role | null;
   view: ViewKey;
@@ -22,12 +26,18 @@ interface Persist {
   offline: boolean;
   approvals: Approval[];
   sites: GeoSite[];
-  phSites: PhSite[];
   activity: Activity[];
   checks: Record<string, boolean[]>;
   archived: string[];
   settings: Record<string, SettingValue>;
   pendingSettings: Record<string, PendingSetting>;
+  taskEdits: Record<string, TaskPatch>;
+  curveEdits: Record<string, number>;
+  moduleEdits: Record<string, ModulePatch>;
+  pendingTaskEdits: Record<string, PendingEdit<TaskPatch>>;
+  pendingCurveEdits: Record<string, PendingEdit<number>>;
+  pendingModuleEdits: Record<string, PendingEdit<ModulePatch>>;
+  phSites: PhSite[];
   reports: Report[];
 }
 
@@ -36,9 +46,11 @@ export const uid = () => Math.random().toString(36).slice(2, 9);
 
 const FALLBACK: Persist = {
   role: null, view: "dashboard", moduleId: null, offline: false,
-  approvals: APPROVALS_SEED, sites: SITES_SEED, phSites: PH_SITES,
-  activity: ACTIVITY_SEED, checks: {}, archived: [], settings: {},
-  pendingSettings: {}, reports: [],
+  approvals: APPROVALS_SEED, sites: SITES_SEED, activity: ACTIVITY_SEED,
+  checks: {}, archived: [], settings: {}, pendingSettings: {},
+  taskEdits: {}, curveEdits: {}, moduleEdits: {},
+  pendingTaskEdits: {}, pendingCurveEdits: {}, pendingModuleEdits: {},
+  phSites: PH_SITES, reports: [],
 };
 
 function load(): Persist {
@@ -53,10 +65,14 @@ function load(): Persist {
 
 interface Ctx {
   role: Role | null; view: ViewKey; moduleId: string | null;
-  offline: boolean; approvals: Approval[]; sites: GeoSite[]; phSites: PhSite[];
+  offline: boolean; approvals: Approval[]; sites: GeoSite[];
   activity: Activity[]; checks: Record<string, boolean[]>; archived: string[];
   settings: Record<string, SettingValue>; pendingSettings: Record<string, PendingSetting>;
-  reports: Report[];
+  taskEdits: Record<string, TaskPatch>; curveEdits: Record<string, number>; moduleEdits: Record<string, ModulePatch>;
+  pendingTaskEdits: Record<string, PendingEdit<TaskPatch>>;
+  pendingCurveEdits: Record<string, PendingEdit<number>>;
+  pendingModuleEdits: Record<string, PendingEdit<ModulePatch>>;
+  phSites: PhSite[]; reports: Report[];
   toasts: Toast[]; syncQueue: string[];
   pendingCount: number;
   nav: (v: ViewKey, moduleId?: string) => void;
@@ -69,13 +85,16 @@ interface Ctx {
   withdraw: (approvalId: string) => void;
   submit: (a: Omit<Approval, "id" | "ts" | "status">) => void;
   updateSetting: (key: string, value: SettingValue) => void;
-  addSite: (s: GeoSite) => void;
-  updateSite: (id: string, patch: Partial<GeoSite>) => void;
-  removeSite: (id: string) => void;
+  applyTaskEdit: (taskId: string, patch: TaskPatch) => void;
+  applyCurveEdit: (code: string, progress: number) => void;
+  applyModuleEdit: (modId: string, patch: ModulePatch) => void;
   addPh: (s: PhSite) => void;
   updatePh: (id: string, patch: Partial<PhSite>) => void;
   removePh: (id: string) => void;
   addReport: (r: Report) => void;
+  addSite: (s: GeoSite) => void;
+  updateSite: (id: string, patch: Partial<GeoSite>) => void;
+  removeSite: (id: string) => void;
   toggleCheck: (modId: string, idx: number, total: number) => void;
   archive: (id: string) => void;
   restore: (id: string) => void;
@@ -92,18 +111,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try { localStorage.setItem(KEY, JSON.stringify(s)); } catch { /* storage full */ }
   }, [s]);
-
-  // react to real network loss / return
-  useEffect(() => {
-    const goOff = () => setS((p) => (p.offline ? p : { ...p, offline: true }));
-    const goOn = () => setS((p) => (p.offline ? { ...p, offline: false } : p));
-    window.addEventListener("offline", goOff);
-    window.addEventListener("online", goOn);
-    return () => {
-      window.removeEventListener("offline", goOff);
-      window.removeEventListener("online", goOn);
-    };
-  }, []);
 
   const toast = useCallback((msg: string, tone: Toast["tone"] = "ok") => {
     const id = uid();
@@ -130,13 +137,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
-  // ── auth: separate portals, separate credentials ──
-
   const login = useCallback((user: string, pass: string): boolean => {
     const u = user.trim().toLowerCase();
-    const pw = pass.trim();
+    const p = pass.trim();
     const found = (Object.keys(CREDENTIALS) as Role[]).find(
-      (r) => CREDENTIALS[r].user === u && CREDENTIALS[r].pass === pw,
+      (r) => CREDENTIALS[r].user === u && CREDENTIALS[r].pass === p,
     );
     if (!found) return false;
     setS((prev) => ({
@@ -169,7 +174,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (!next && syncQueue.length) {
         const n = syncQueue.length;
         setSyncQueue([]);
-        setS((q) => ({ ...q, reports: q.reports.map((r) => ({ ...r, queued: false })) }));
         window.setTimeout(() => {
           toast(`Uplink restored — ${n} queued op${n > 1 ? "s" : ""} synced to control`, "ok");
           log(`Sync flush complete · ${n} operation${n > 1 ? "s" : ""} reconciled`, "sync");
@@ -177,19 +181,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
       } else if (next) {
         window.setTimeout(() => toast("Offline node engaged — changes will queue locally", "warn"), 60);
       }
-      return { ...p, offline: next };
+      return {
+        ...p, offline: next,
+        reports: next ? p.reports : p.reports.map((r) => (r.queued ? { ...r, queued: false } : r)),
+      };
     });
   }, [syncQueue, toast, log]);
 
-  // ── approval gate (governs settings changes & report approvals) ──
+  // ── approval gate: settings, gantt, s-curve & module edits all settle here ──
 
   const decide = useCallback((id: string, status: ApprovalStatus, note?: string) => {
     setS((p) => {
       const a = p.approvals.find((x) => x.id === id);
-      let settings = p.settings;
-      let pendingSettings = p.pendingSettings;
-      let reports = p.reports;
-      let activity = p.activity;
+      let { settings, pendingSettings, taskEdits, pendingTaskEdits, curveEdits, pendingCurveEdits, moduleEdits, pendingModuleEdits, activity } = p;
+      const stamp = (text: string) => {
+        activity = [{ id: uid(), ts: Date.now(), who: ROLE_META.admin.persona, text, tag: "approval" }, ...activity].slice(0, 40);
+      };
 
       if (a?.type === "settings-change") {
         const key = Object.keys(pendingSettings).find((k) => pendingSettings[k].approvalId === id);
@@ -198,23 +205,49 @@ export function AppProvider({ children }: { children: ReactNode }) {
           const def = SETTINGS_SEED.find((x) => x.key === key);
           if (status === "approved") {
             settings = { ...settings, [key]: entry.value };
-            activity = [{ id: uid(), ts: Date.now(), who: ROLE_META.admin.persona, text: `Settings applied at gate · ${def?.label ?? key} → ${String(entry.value)}`, tag: "approval" }, ...activity].slice(0, 40);
-          } else {
-            activity = [{ id: uid(), ts: Date.now(), who: ROLE_META.admin.persona, text: `Settings change rejected at gate · ${def?.label ?? key} stays at current value`, tag: "approval" }, ...activity].slice(0, 40);
-          }
-          pendingSettings = { ...pendingSettings };
-          delete pendingSettings[key];
+            stamp(`Settings applied at gate · ${def?.label ?? key} → ${String(entry.value)}`);
+          } else stamp(`Settings change rejected at gate · ${def?.label ?? key} unchanged`);
+          pendingSettings = { ...pendingSettings }; delete pendingSettings[key];
         }
       }
 
-      if (a?.type === "report-approval") {
-        const ref = a.target.replace("report:", "");
-        reports = reports.map((r) => (r.ref === ref ? { ...r, result: status === "approved" ? r.result : "attention", queued: false } : r));
-        activity = [{ id: uid(), ts: Date.now(), who: ROLE_META.admin.persona, text: `Inspection report ${ref} ${status} at gate`, tag: "approval" }, ...activity].slice(0, 40);
+      if (a?.type === "change-request") {
+        if (a.target.startsWith("gantt:")) {
+          const tid = a.target.slice(6);
+          const pend = pendingTaskEdits[tid];
+          if (pend) {
+            if (status === "approved") {
+              taskEdits = { ...taskEdits, [tid]: { ...taskEdits[tid], ...pend.patch } };
+              stamp(`Gantt edit applied at gate · ${tid} rescheduled`);
+            } else stamp(`Gantt edit rejected at gate · ${tid} unchanged`);
+            pendingTaskEdits = { ...pendingTaskEdits }; delete pendingTaskEdits[tid];
+          }
+        } else if (a.target.startsWith("scurve:")) {
+          const code = a.target.slice(7);
+          const pend = pendingCurveEdits[code];
+          if (pend) {
+            if (status === "approved") {
+              curveEdits = { ...curveEdits, [code]: pend.patch };
+              stamp(`S-curve certified at gate · ${code} → ${pend.patch}%`);
+            } else stamp(`S-curve certification rejected · ${code} unchanged`);
+            pendingCurveEdits = { ...pendingCurveEdits }; delete pendingCurveEdits[code];
+          }
+        } else if (a.target.startsWith("module:")) {
+          const mid = a.target.slice(7);
+          const pend = pendingModuleEdits[mid];
+          if (pend) {
+            if (status === "approved") {
+              moduleEdits = { ...moduleEdits, [mid]: { ...moduleEdits[mid], ...pend.patch } };
+              stamp(`Module artifact applied at gate · ${mid} revised`);
+            } else stamp(`Module revision rejected at gate · ${mid} unchanged`);
+            pendingModuleEdits = { ...pendingModuleEdits }; delete pendingModuleEdits[mid];
+          }
+        }
       }
 
       return {
-        ...p, settings, pendingSettings, reports, activity,
+        ...p, settings, pendingSettings, taskEdits, pendingTaskEdits,
+        curveEdits, pendingCurveEdits, moduleEdits, pendingModuleEdits, activity,
         approvals: p.approvals.map((x) => (x.id === id ? { ...x, status, note: note ?? x.note } : x)),
       };
     });
@@ -223,11 +256,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const withdraw = useCallback((approvalId: string) => {
     setS((p) => {
+      const strip = <T,>(map: Record<string, PendingEdit<T>>) => {
+        const next = { ...map };
+        for (const k of Object.keys(next)) if (next[k].approvalId === approvalId) delete next[k];
+        return next;
+      };
       const pendingSettings = { ...p.pendingSettings };
-      for (const k of Object.keys(pendingSettings)) {
-        if (pendingSettings[k].approvalId === approvalId) delete pendingSettings[k];
-      }
-      return { ...p, approvals: p.approvals.filter((a) => a.id !== approvalId), pendingSettings };
+      for (const k of Object.keys(pendingSettings)) if (pendingSettings[k].approvalId === approvalId) delete pendingSettings[k];
+      return {
+        ...p,
+        approvals: p.approvals.filter((a) => a.id !== approvalId),
+        pendingSettings,
+        pendingTaskEdits: strip(p.pendingTaskEdits),
+        pendingCurveEdits: strip(p.pendingCurveEdits),
+        pendingModuleEdits: strip(p.pendingModuleEdits),
+      };
     });
     queue(`withdraw:${approvalId}`);
   }, [queue]);
@@ -291,7 +334,118 @@ export function AppProvider({ children }: { children: ReactNode }) {
     queue(`settings:${key}`);
   }, [s.role, s.settings, toast, queue]);
 
-  // ── geo: sector grid + PH network ──
+  // ── governed planner + module edits (admin direct · others via gate) ──
+
+  const routeOrApply = useCallback((
+    kind: "gantt" | "scurve" | "module",
+    targetId: string,
+    title: string,
+    summary: string,
+    apply: (p: Persist) => Persist,
+    setPending: (p: Persist, apId: string) => Persist,
+  ) => {
+    const role = s.role;
+    if (!role) return;
+    const who = ROLE_META[role].persona;
+
+    if (role === "admin") {
+      setS((p) => {
+        let next = apply(p);
+        // supersede any pending request on the same target
+        const stripMap = <T,>(map: Record<string, PendingEdit<T>>, id: string) => {
+          const m = { ...map }; delete m[id]; return m;
+        };
+        if (kind === "gantt") {
+          const pend = p.pendingTaskEdits[targetId];
+          if (pend) next = { ...next, approvals: next.approvals.filter((a) => a.id !== pend.approvalId), pendingTaskEdits: stripMap(next.pendingTaskEdits, targetId) };
+        } else if (kind === "scurve") {
+          const pend = p.pendingCurveEdits[targetId];
+          if (pend) next = { ...next, approvals: next.approvals.filter((a) => a.id !== pend.approvalId), pendingCurveEdits: stripMap(next.pendingCurveEdits, targetId) };
+        } else {
+          const pend = p.pendingModuleEdits[targetId];
+          if (pend) next = { ...next, approvals: next.approvals.filter((a) => a.id !== pend.approvalId), pendingModuleEdits: stripMap(next.pendingModuleEdits, targetId) };
+        }
+        return {
+          ...next,
+          activity: [{ id: uid(), ts: Date.now(), who, text: `${title} applied (L5 direct)`, tag: "plan" }, ...next.activity].slice(0, 40),
+        };
+      });
+      toast(`${title} — applied`, "ok");
+      return;
+    }
+
+    const apId = uid();
+    setS((p) => {
+      const withPending = setPending(p, apId);
+      return {
+        ...withPending,
+        approvals: [
+          {
+            id: apId, type: "change-request" as const, title, target: `${kind}:${targetId}`,
+            requester: who, role, summary, status: "pending" as const, ts: Date.now(),
+          },
+          ...p.approvals,
+        ],
+        activity: [{ id: uid(), ts: Date.now(), who, text: `${title} — routed to L5 gate`, tag: "approval" }, ...p.activity].slice(0, 40),
+      };
+    });
+    toast(`${title} — routed to admin gate`, "info");
+    queue(`${kind}:edit:${targetId}`);
+  }, [s.role, toast, queue]);
+
+  const applyTaskEdit = useCallback((taskId: string, patch: TaskPatch) => {
+    routeOrApply(
+      "gantt", taskId,
+      `Gantt edit · ${taskId}`,
+      `Reschedule ${taskId}: ${Object.entries(patch).map(([k, v]) => `${k} → ${v}`).join(", ")}. Applies after L5 sign-off.`,
+      (p) => ({ ...p, taskEdits: { ...p.taskEdits, [taskId]: { ...p.taskEdits[taskId], ...patch } } }),
+      (p, apId) => ({ ...p, pendingTaskEdits: { ...p.pendingTaskEdits, [taskId]: { patch, requestedBy: ROLE_META[s.role!].persona, role: s.role!, ts: Date.now(), approvalId: apId } } }),
+    );
+  }, [routeOrApply, s.role]);
+
+  const applyCurveEdit = useCallback((code: string, progress: number) => {
+    routeOrApply(
+      "scurve", code,
+      `S-curve certification · ${code}`,
+      `Certify earned progress on ${code} at ${progress}%. Curve recomputes after L5 sign-off.`,
+      (p) => ({ ...p, curveEdits: { ...p.curveEdits, [code]: progress } }),
+      (p, apId) => ({ ...p, pendingCurveEdits: { ...p.pendingCurveEdits, [code]: { patch: progress, requestedBy: ROLE_META[s.role!].persona, role: s.role!, ts: Date.now(), approvalId: apId } } }),
+    );
+  }, [routeOrApply, s.role]);
+
+  const applyModuleEdit = useCallback((modId: string, patch: ModulePatch) => {
+    const bits: string[] = [];
+    if (patch.name) bits.push(`name → “${patch.name}”`);
+    if (patch.desc) bits.push("description revised");
+    if (patch.steps) bits.push(`checklist → ${patch.steps.length} steps`);
+    routeOrApply(
+      "module", modId,
+      `Module revision · ${modId}`,
+      `Revise governed artifact ${modId}: ${bits.join("; ")}. Applies after L5 sign-off.`,
+      (p) => ({ ...p, moduleEdits: { ...p.moduleEdits, [modId]: { ...p.moduleEdits[modId], ...patch } } }),
+      (p, apId) => ({ ...p, pendingModuleEdits: { ...p.pendingModuleEdits, [modId]: { patch, requestedBy: ROLE_META[s.role!].persona, role: s.role!, ts: Date.now(), approvalId: apId } } }),
+    );
+  }, [routeOrApply, s.role]);
+
+  const addPh = useCallback((site: PhSite) => {
+    setS((p) => ({ ...p, phSites: [...p.phSites, site] }));
+    queue(`ph:add:${site.code}`);
+  }, [queue]);
+
+  const updatePh = useCallback((id: string, patch: Partial<PhSite>) => {
+    setS((p) => ({ ...p, phSites: p.phSites.map((x) => (x.id === id ? { ...x, ...patch } : x)) }));
+    queue(`ph:edit:${id}`);
+  }, [queue]);
+
+  const removePh = useCallback((id: string) => {
+    setS((p) => ({ ...p, phSites: p.phSites.filter((x) => x.id !== id) }));
+    queue(`ph:del:${id}`);
+  }, [queue]);
+
+  const addReport = useCallback((r: Report) => {
+    setS((p) => ({ ...p, reports: [r, ...p.reports] }));
+    queue(`report:${r.ref}`);
+  }, [queue]);
 
   const addSite = useCallback((site: GeoSite) => {
     setS((p) => ({ ...p, sites: [...p.sites, site] }));
@@ -307,27 +461,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setS((p) => ({ ...p, sites: p.sites.filter((x) => x.id !== id) }));
     queue(`geo:del:${id}`);
   }, [queue]);
-
-  const addPh = useCallback((site: PhSite) => {
-    setS((p) => ({ ...p, phSites: [...p.phSites, site] }));
-    queue(`ph:add:${site.code}`);
-  }, [queue]);
-
-  const updatePh = useCallback((id: string, patch: Partial<PhSite>) => {
-    setS((p) => ({ ...p, phSites: p.phSites.map((x) => (x.id === id ? { ...x, ...patch, lastSync: app_offline(p) ? x.lastSync : "just now" } : x)) }));
-    queue(`ph:edit:${id}`);
-  }, [queue]);
-
-  const removePh = useCallback((id: string) => {
-    setS((p) => ({ ...p, phSites: p.phSites.filter((x) => x.id !== id) }));
-    queue(`ph:del:${id}`);
-  }, [queue]);
-
-  const addReport = useCallback((r: Report) => {
-    setS((p) => ({ ...p, reports: [r, ...p.reports] }));
-    queue(`report:${r.ref}`);
-    log(`Filed inspection report ${r.ref} · ${r.site}${r.queued ? " (queued offline)" : ""}`, "field", r.inspector);
-  }, [queue, log]);
 
   const toggleCheck = useCallback((modId: string, idx: number, total: number) => {
     setS((p) => {
@@ -357,14 +490,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     ...s, toasts, syncQueue,
     pendingCount: s.approvals.filter((a) => a.status === "pending").length,
     nav, login, logout, toggleOffline, toast, log, decide, withdraw, submit, updateSetting,
-    addSite, updateSite, removeSite, addPh, updatePh, removePh, addReport,
-    toggleCheck, archive, restore, reset,
+    applyTaskEdit, applyCurveEdit, applyModuleEdit,
+    addPh, updatePh, removePh, addReport,
+    addSite, updateSite, removeSite, toggleCheck, archive, restore, reset,
   };
 
   return <AppCtx.Provider value={value}>{children}</AppCtx.Provider>;
 }
-
-function app_offline(p: Persist) { return p.offline; }
 
 export function useApp(): Ctx {
   const c = useContext(AppCtx);

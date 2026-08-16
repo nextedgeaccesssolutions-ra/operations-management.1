@@ -91,7 +91,7 @@ function FormWS({ mod }: { mod: ModuleDef }) {
 
 function ChecklistWS({ mod }: { mod: ModuleDef }) {
   const app = useApp();
-  const steps = CHECKLISTS[mod.id] ?? [];
+  const steps = app.moduleEdits[mod.id]?.steps ?? CHECKLISTS[mod.id] ?? [];
   const checks = app.checks[mod.id] ?? Array<boolean>(steps.length).fill(false);
   const done = checks.filter(Boolean).length;
   const pct = steps.length ? Math.round((done / steps.length) * 100) : 0;
