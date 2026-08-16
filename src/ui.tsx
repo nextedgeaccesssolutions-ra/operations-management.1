@@ -48,7 +48,43 @@ const P: Record<string, ReactNode> = {
   cal: <><rect x="3.5" y="5" width="17" height="15.5" /><path d="M3.5 9.5h17M8 3v4M16 3v4" /></>,
   cpu: <><rect x="6" y="6" width="12" height="12" /><rect x="9.5" y="9.5" width="5" height="5" /><path d="M9 2.5v3.5M15 2.5v3.5M9 18v3.5M15 18v3.5M2.5 9H6M2.5 15H6M18 9h3.5M18 15h3.5" /></>,
   sliders: <><path d="M5 4v5.5M5 14.5V20" /><path d="M12 4v2M12 11v9" /><path d="M19 4v9M19 18v2" /><circle cx="5" cy="12" r="2.2" /><circle cx="12" cy="8.5" r="2.2" /><circle cx="19" cy="15.5" r="2.2" /></>,
+  sun: <><circle cx="12" cy="12" r="4" /><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5 5l1.6 1.6M17.4 17.4L19 19M19 5l-1.6 1.6M6.6 17.4L5 19" /></>,
+  moon: <path d="M20 13.5A8.5 8.5 0 0 1 10.5 4a7.5 7.5 0 1 0 9.5 9.5z" />,
+  clip: <><path d="M8 12.5V7a4 4 0 0 1 8 0v8.5a5.5 5.5 0 0 1-11 0V8" /><path d="M8 12.5V8a1.5 1.5 0 0 1 3 0v7" strokeWidth="1.2" /></>,
 };
+
+// ───────────────────────── theme toggle ─────────────────────────
+
+export function useTheme() {
+  const [light, setLight] = useState(() =>
+    typeof document !== "undefined" && document.documentElement.classList.contains("light"),
+  );
+  const toggle = () => {
+    setLight((v) => {
+      const next = !v;
+      document.documentElement.classList.toggle("light", next);
+      try { localStorage.setItem("opsdeck:theme", next ? "light" : "dark"); } catch { /* private mode */ }
+      return next;
+    });
+  };
+  return { light, toggle };
+}
+
+export function ThemeToggle({ compact = false }: { compact?: boolean }) {
+  const { light, toggle } = useTheme();
+  return (
+    <button
+      onClick={toggle}
+      title={light ? "Switch to dark console" : "Switch to light theme"}
+      aria-label="Toggle theme"
+      className="chip !px-2 !cursor-pointer group"
+    >
+      <Icon name={light ? "moon" : "sun"} size={13}
+        className={`transition-transform duration-300 group-hover:rotate-45 ${light ? "text-blux" : "text-amberx"}`} />
+      {!compact && <span>{light ? "dark" : "light"}</span>}
+    </button>
+  );
+}
 
 export function Icon({ name, size = 16, className = "", sw = 1.6 }: { name: string; size?: number; className?: string; sw?: number }) {
   return (

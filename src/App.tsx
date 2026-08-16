@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AppProvider, useApp } from "./store";
 import { CREDENTIALS, NAV_FOR, PORTALS, ROLE_META } from "./data";
 import type { Role, ViewKey } from "./data";
-import { Avatar, Icon, LiveClock } from "./ui";
+import { Avatar, Icon, LiveClock, ThemeToggle } from "./ui";
 import { Dashboard } from "./views/Dashboard";
 import { GanttView, SCurveView } from "./views/Planner";
 import { GeoView } from "./views/Geo";
@@ -102,7 +102,8 @@ function LoginScreen() {
   };
 
   return (
-    <div className="relative z-10 min-h-screen grid lg:grid-cols-[1.05fr_1fr]">
+    <div className="gate-shell relative z-10 min-h-screen grid lg:grid-cols-[1.05fr_1fr]">
+      <div className="absolute top-3.5 right-3.5 z-20"><ThemeToggle compact /></div>
       {/* left — system identity */}
       <div className="relative hidden lg:flex flex-col justify-between p-10 xl:p-14 border-r border-line overflow-hidden">
         <div className="pointer-events-none absolute -right-28 top-1/3 w-[440px] h-[440px] rounded-full border border-line/70">
@@ -415,7 +416,7 @@ function Shell() {
       </aside>
 
       <div className={collapsed ? "md:pl-16" : "md:pl-[230px]"}>
-        <header className="sticky top-0 z-40 h-[54px] border-b border-line bg-ink/85 backdrop-blur-md flex items-center gap-3 px-3 sm:px-5">
+        <header className="topbar sticky top-0 z-40 h-[54px] border-b border-line bg-ink/85 backdrop-blur-md flex items-center gap-3 px-3 sm:px-5">
           <button className="md:hidden btn !h-8 !px-2" onClick={() => setDrawer(true)}><Icon name="menu" size={15} /></button>
           <span className="chip !cursor-default" style={{ color: meta.accent, borderColor: `${meta.accent}55`, background: `${meta.accent}0d` }}>
             <Icon name={portal.icon} size={11} /> {portal.tag}
@@ -424,6 +425,13 @@ function Shell() {
           <span className="microlabel hidden lg:block">/ {curLabel}</span>
 
           <div className="ml-auto flex items-center gap-2.5 sm:gap-3">
+            <span className="chip !cursor-default hidden lg:inline-flex !text-tealx !border-tealx/45">
+              <span className="led led-teal" /> PWA
+            </span>
+            <span className="chip !cursor-default hidden xl:inline-flex !text-fog !border-line2">
+              <Icon name="zap" size={10} className="text-amberx" /> vercel ready
+            </span>
+            <ThemeToggle />
             <button
               className={`hidden md:flex chip !cursor-default ${app.offline ? "!text-amberx !border-amberx/50" : "!text-grnx !border-grnx/40"}`}
               onClick={app.toggleOffline} title="Toggle offline node">
