@@ -5,7 +5,7 @@
 export type Role = "admin" | "client" | "inspector";
 export type ViewKey =
   | "dashboard" | "gantt" | "scurve" | "geo" | "approvals"
-  | "modules" | "module" | "search";
+  | "modules" | "module" | "search" | "settings";
 
 export type ProjectStatus = "on-track" | "at-risk" | "delayed" | "planning";
 
@@ -34,7 +34,7 @@ export interface GeoSite {
 }
 
 export type ApprovalType =
-  | "change-request" | "file-delete" | "geo-tag" | "edit" | "vendor-review";
+  | "change-request" | "file-delete" | "geo-tag" | "edit" | "vendor-review" | "settings-change";
 export type ApprovalStatus = "pending" | "approved" | "rejected";
 export interface Approval {
   id: string; type: ApprovalType; title: string; target: string;
@@ -82,6 +82,98 @@ export const ROLE_SCOPE: Record<Role, string[]> = {
   client: ["PRJ-014", "PRJ-027"],
   inspector: ["PRJ-014", "PRJ-021", "PRJ-033"],
 };
+
+// ───────────────────────── portals · credentials · navigation ─────────────────────────
+
+export const PORTALS: Record<Role, { name: string; tag: string; desc: string; icon: string }> = {
+  admin: {
+    name: "Command Portal", tag: "CMD", icon: "shield",
+    desc: "Full-scope governance console. Approval gate, geo authority, platform settings and archive rights.",
+  },
+  client: {
+    name: "Client Portal", tag: "CLT", icon: "target",
+    desc: "Portfolio truth for Meridian Energy. Dashboards, earned value, milestones and request tracking.",
+  },
+  inspector: {
+    name: "Field Portal", tag: "FLD", icon: "radio",
+    desc: "Field Unit 07 console. Inspections, geo drops, offline sync — every setting edit routes to the L5 gate.",
+  },
+};
+
+export const CREDENTIALS: Record<Role, { user: string; pass: string; hint: string }> = {
+  admin: { user: "a.kessler", pass: "deck-admin", hint: "a.kessler · deck-admin" },
+  client: { user: "j.okafor", pass: "deck-client", hint: "j.okafor · deck-client" },
+  inspector: { user: "r.vance", pass: "deck-field", hint: "r.vance · deck-field" },
+};
+
+export interface NavItem { view: ViewKey; label: string; icon: string; }
+
+export const NAV_FOR: Record<Role, NavItem[]> = {
+  admin: [
+    { view: "dashboard", label: "Command Deck", icon: "grid" },
+    { view: "gantt", label: "Gantt Planner", icon: "gantt" },
+    { view: "scurve", label: "S-Curve Control", icon: "curve" },
+    { view: "geo", label: "Geo Command", icon: "pin" },
+    { view: "approvals", label: "Approval Gate", icon: "shield" },
+    { view: "settings", label: "Platform Settings", icon: "sliders" },
+    { view: "modules", label: "Module Registry", icon: "layers" },
+    { view: "search", label: "Enterprise Search", icon: "search" },
+  ],
+  client: [
+    { view: "dashboard", label: "Portfolio Deck", icon: "grid" },
+    { view: "gantt", label: "Programme Gantt", icon: "gantt" },
+    { view: "scurve", label: "S-Curve Review", icon: "curve" },
+    { view: "geo", label: "Site Map", icon: "pin" },
+    { view: "approvals", label: "My Requests", icon: "shield" },
+    { view: "modules", label: "Module Registry", icon: "layers" },
+    { view: "search", label: "Enterprise Search", icon: "search" },
+  ],
+  inspector: [
+    { view: "dashboard", label: "Field Console", icon: "grid" },
+    { view: "gantt", label: "Sector Gantt", icon: "gantt" },
+    { view: "scurve", label: "Progress S-Curve", icon: "curve" },
+    { view: "geo", label: "Geo Drop", icon: "pin" },
+    { view: "approvals", label: "Approval Gate", icon: "shield" },
+    { view: "settings", label: "Settings · gated", icon: "sliders" },
+    { view: "modules", label: "Module Registry", icon: "layers" },
+    { view: "search", label: "Enterprise Search", icon: "search" },
+  ],
+};
+
+// ───────────────────────── governed platform settings ─────────────────────────
+
+export type SettingValue = string | number | boolean;
+
+export interface SettingDef {
+  key: string; section: string; label: string; desc: string;
+  kind: "toggle" | "select" | "number" | "text";
+  def: SettingValue; options?: string[]; unit?: string;
+}
+
+export const SETTING_SECTIONS = ["Platform", "Sync & Offline", "Notifications", "Governance", "Data & Retention"];
+
+export const SETTINGS_SEED: SettingDef[] = [
+  { key: "platform_name", section: "Platform", label: "Platform name", desc: "Shown on all portal headers and generated reports.", kind: "text", def: "OPSDECK OS" },
+  { key: "maintenance_mode", section: "Platform", label: "Maintenance mode", desc: "Freeze writes for all non-L5 sessions during change windows.", kind: "toggle", def: false },
+  { key: "session_timeout", section: "Platform", label: "Session timeout", desc: "Auto sign-out after inactivity on field consoles.", kind: "select", options: ["15 min", "30 min", "60 min", "8 h"], def: "30 min" },
+  { key: "sync_interval", section: "Sync & Offline", label: "Uplink sync interval", desc: "How often online nodes push the evidence queue to control.", kind: "select", options: ["15 s", "30 s", "60 s", "120 s"], def: "30 s" },
+  { key: "offline_tolerance", section: "Sync & Offline", label: "Offline tolerance", desc: "Hours a node may run dark before control is alerted.", kind: "number", def: 12, unit: "h" },
+  { key: "evidence_autosync", section: "Sync & Offline", label: "Evidence auto-sync", desc: "Push geo-tagged photos and step-locks as soon as uplink returns.", kind: "toggle", def: true },
+  { key: "conflict_policy", section: "Sync & Offline", label: "Merge conflict policy", desc: "Behaviour when two nodes edit the same artifact offline.", kind: "select", options: ["control wins", "field wins", "manual merge"], def: "manual merge" },
+  { key: "notif_email", section: "Notifications", label: "Email alerts", desc: "Approval decisions and NCR events to portal owners.", kind: "toggle", def: true },
+  { key: "notif_sms", section: "Notifications", label: "SMS escalation", desc: "SLA breaches page the on-call commander.", kind: "toggle", def: false },
+  { key: "notif_digest", section: "Notifications", label: "Digest cadence", desc: "Rollup of field activity for client stakeholders.", kind: "select", options: ["daily", "weekly", "off"], def: "daily" },
+  { key: "approval_sla", section: "Governance", label: "Approval SLA", desc: "Decision window before a pending gate item escalates.", kind: "select", options: ["12 h", "24 h", "48 h"], def: "24 h" },
+  { key: "dual_sign_deletes", section: "Governance", label: "Dual-sign deletes", desc: "Archive actions require a second L5 countersign.", kind: "toggle", def: true },
+  { key: "geo_authority", section: "Governance", label: "Geo-tag authority", desc: "Who may register new waypoints without a gate decision.", kind: "select", options: ["admin only", "admin + inspector", "all roles"], def: "admin only" },
+  { key: "runbook_enforcement", section: "Governance", label: "Runbook enforcement", desc: "Strict locks steps in order; standard allows skips with a note.", kind: "select", options: ["strict", "standard", "advisory"], def: "strict" },
+  { key: "retention_days", section: "Data & Retention", label: "Evidence retention", desc: "Days geo-tagged evidence is retained before purge review.", kind: "number", def: 365, unit: "d" },
+  { key: "audit_stream", section: "Data & Retention", label: "Audit stream", desc: "Immutable ledger of every governed action.", kind: "toggle", def: true },
+];
+
+export const SETTING_DEFAULTS: Record<string, SettingValue> = Object.fromEntries(
+  SETTINGS_SEED.map((x) => [x.key, x.def]),
+);
 
 // ───────────────────────── projects ─────────────────────────
 
@@ -551,6 +643,7 @@ export const APPROVAL_TYPE_LABEL: Record<ApprovalType, string> = {
   "change-request": "Change request",
   "file-delete": "File delete",
   "geo-tag": "Geo-tag",
+  "settings-change": "Settings change",
   edit: "Edit",
   "vendor-review": "Vendor review",
 };

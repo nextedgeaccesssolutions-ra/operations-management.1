@@ -5,7 +5,8 @@ import { Avatar, Empty, Icon, Reveal, SectionHead, StatusPill } from "../ui";
 import { useApp } from "../store";
 
 const TYPE_ICON: Record<ApprovalType, string> = {
-  "change-request": "edit", "file-delete": "trash", "geo-tag": "pin", edit: "file", "vendor-review": "star",
+  "change-request": "edit", "file-delete": "trash", "geo-tag": "pin", edit: "file",
+  "vendor-review": "star", "settings-change": "sliders",
 };
 
 export function ApprovalsView() {
@@ -162,6 +163,11 @@ export function ApprovalsView() {
                           <Icon name="x" size={12} /> {noteFor === a.id ? "confirm reject" : "reject"}
                         </button>
                       </div>
+                    )}
+                    {!isAdmin && a.status === "pending" && a.requester === ROLE_META[role].persona && (
+                      <button className="btn !h-8" onClick={() => { app.withdraw(a.id); app.toast("Request withdrawn from gate", "info"); }}>
+                        <Icon name="x" size={12} /> withdraw
+                      </button>
                     )}
                   </div>
                 </div>

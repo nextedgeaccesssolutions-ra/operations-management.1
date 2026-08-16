@@ -47,6 +47,7 @@ const P: Record<string, ReactNode> = {
   filter: <path d="M4 5.5h16l-6.2 7.2v5.8L10.2 20v-7.3z" />,
   cal: <><rect x="3.5" y="5" width="17" height="15.5" /><path d="M3.5 9.5h17M8 3v4M16 3v4" /></>,
   cpu: <><rect x="6" y="6" width="12" height="12" /><rect x="9.5" y="9.5" width="5" height="5" /><path d="M9 2.5v3.5M15 2.5v3.5M9 18v3.5M15 18v3.5M2.5 9H6M2.5 15H6M18 9h3.5M18 15h3.5" /></>,
+  sliders: <><path d="M5 4v5.5M5 14.5V20" /><path d="M12 4v2M12 11v9" /><path d="M19 4v9M19 18v2" /><circle cx="5" cy="12" r="2.2" /><circle cx="12" cy="8.5" r="2.2" /><circle cx="19" cy="15.5" r="2.2" /></>,
 };
 
 export function Icon({ name, size = 16, className = "", sw = 1.6 }: { name: string; size?: number; className?: string; sw?: number }) {
