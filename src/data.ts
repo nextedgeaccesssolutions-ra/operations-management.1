@@ -5,7 +5,7 @@
 export type Role = "admin" | "client" | "inspector";
 export type ViewKey =
   | "dashboard" | "gantt" | "scurve" | "geo" | "approvals"
-  | "modules" | "module" | "search" | "settings";
+  | "modules" | "module" | "search" | "settings" | "reports";
 
 export type ProjectStatus = "on-track" | "at-risk" | "delayed" | "planning";
 
@@ -34,7 +34,7 @@ export interface GeoSite {
 }
 
 export type ApprovalType =
-  | "change-request" | "file-delete" | "geo-tag" | "edit" | "vendor-review" | "settings-change";
+  | "change-request" | "file-delete" | "geo-tag" | "edit" | "vendor-review" | "settings-change" | "report-approval";
 export type ApprovalStatus = "pending" | "approved" | "rejected";
 export interface Approval {
   id: string; type: ApprovalType; title: string; target: string;
@@ -114,6 +114,7 @@ export const NAV_FOR: Record<Role, NavItem[]> = {
     { view: "gantt", label: "Gantt Planner", icon: "gantt" },
     { view: "scurve", label: "S-Curve Control", icon: "curve" },
     { view: "geo", label: "Geo Command", icon: "pin" },
+    { view: "reports", label: "Inspection Reports", icon: "clip" },
     { view: "approvals", label: "Approval Gate", icon: "shield" },
     { view: "settings", label: "Platform Settings", icon: "sliders" },
     { view: "modules", label: "Module Registry", icon: "layers" },
@@ -124,6 +125,7 @@ export const NAV_FOR: Record<Role, NavItem[]> = {
     { view: "gantt", label: "Programme Gantt", icon: "gantt" },
     { view: "scurve", label: "S-Curve Review", icon: "curve" },
     { view: "geo", label: "Site Map", icon: "pin" },
+    { view: "reports", label: "Inspection Reports", icon: "clip" },
     { view: "approvals", label: "My Requests", icon: "shield" },
     { view: "modules", label: "Module Registry", icon: "layers" },
     { view: "search", label: "Enterprise Search", icon: "search" },
@@ -133,6 +135,7 @@ export const NAV_FOR: Record<Role, NavItem[]> = {
     { view: "gantt", label: "Sector Gantt", icon: "gantt" },
     { view: "scurve", label: "Progress S-Curve", icon: "curve" },
     { view: "geo", label: "Geo Drop", icon: "pin" },
+    { view: "reports", label: "Field Reports", icon: "clip" },
     { view: "approvals", label: "Approval Gate", icon: "shield" },
     { view: "settings", label: "Settings · gated", icon: "sliders" },
     { view: "modules", label: "Module Registry", icon: "layers" },
@@ -644,6 +647,7 @@ export const APPROVAL_TYPE_LABEL: Record<ApprovalType, string> = {
   "file-delete": "File delete",
   "geo-tag": "Geo-tag",
   "settings-change": "Settings change",
+  "report-approval": "Report approval",
   edit: "Edit",
   "vendor-review": "Vendor review",
 };

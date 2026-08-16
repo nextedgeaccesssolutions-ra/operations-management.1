@@ -6,8 +6,10 @@ import { useApp } from "../store";
 
 const TYPE_ICON: Record<ApprovalType, string> = {
   "change-request": "edit", "file-delete": "trash", "geo-tag": "pin", edit: "file",
-  "vendor-review": "star", "settings-change": "sliders",
+  "vendor-review": "star", "settings-change": "sliders", "report-approval": "clip",
 };
+
+const CLIENT_TYPES: ApprovalType[] = ["change-request", "file-delete", "geo-tag", "vendor-review"];
 
 export function ApprovalsView() {
   const app = useApp();
