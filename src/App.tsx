@@ -10,6 +10,7 @@ import { ApprovalsView } from "./views/Approvals";
 import { LibraryView, ModuleView } from "./views/Modules";
 import { SearchPanel } from "./views/Search";
 import { SettingsView } from "./views/Settings";
+import { ReportsView } from "./views/Reports";
 
 // ───────────────────────── responsive adapter ─────────────────────────
 
@@ -376,6 +377,7 @@ function Shell() {
       dashboard: "Dashboard", gantt: "Gantt Planner", scurve: "S-Curve", geo: "Geo Map",
       approvals: "Approval Gate", modules: "Modules", module: "Module Workspace",
       search: "Enterprise Search", settings: "Platform Settings",
+      reports: "Inspection Reports",
     };
     return map[app.view];
   }, [app.view]);
@@ -446,6 +448,7 @@ function Shell() {
           {app.view === "geo" && <GeoView />}
           {app.view === "approvals" && <ApprovalsView />}
           {app.view === "settings" && <SettingsView />}
+          {app.view === "reports" && <ReportsView />}
           {app.view === "modules" && <LibraryView />}
           {app.view === "module" && app.moduleId && <ModuleView id={app.moduleId} />}
           {app.view === "search" && <SearchPanel />}

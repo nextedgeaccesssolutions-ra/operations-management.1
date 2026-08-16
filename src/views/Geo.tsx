@@ -3,6 +3,7 @@ import { ROLE_META } from "../data";
 import type { GeoSite, SiteStatus } from "../data";
 import { Icon, Reveal, SectionHead, StatusPill } from "../ui";
 import { uid, useApp } from "../store";
+import { PhMap } from "./PhMap";
 
 const STATUS_COLOR: Record<SiteStatus, string> = {
   active: "#43d9a3", attention: "#ffb224", pending: "#58a6ff", offline: "#ff5d55",
@@ -19,6 +20,7 @@ export function GeoView() {
   const app = useApp();
   const role = app.role ?? "admin";
   const isAdmin = role === "admin";
+  const [tab, setTab] = useState<"sector" | "ph">("sector");
   const [sel, setSel] = useState<string | null>(app.sites[0]?.id ?? null);
   const [placing, setPlacing] = useState(false);
   const [ghost, setGhost] = useState<{ x: number; y: number } | null>(null);
@@ -78,6 +80,17 @@ export function GeoView() {
 
   return (
     <div className="space-y-5">
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <button className={`chip ${tab === "sector" ? "chip-on" : ""}`} onClick={() => setTab("sector")}>
+          <Icon name="grid" size={11} /> Sector Grid 07
+        </button>
+        <button className={`chip ${tab === "ph" ? "chip-on" : ""}`} onClick={() => setTab("ph")}>
+          <Icon name="pin" size={11} /> PH Network
+        </button>
+        <span className="microlabel ml-1.5">two theatres · one geo ledger</span>
+      </div>
+
+      {tab === "ph" ? <PhMap /> : <>
       <SectionHead
         kicker="field / geo-tagging · sector 07"
         title="Location Grid"
@@ -292,6 +305,7 @@ export function GeoView() {
           </table>
         </div>
       </Reveal>
+      </>}
     </div>
   );
 }

@@ -116,6 +116,7 @@ export const NAV_FOR: Record<Role, NavItem[]> = {
     { view: "geo", label: "Geo Command", icon: "pin" },
     { view: "reports", label: "Inspection Reports", icon: "clip" },
     { view: "approvals", label: "Approval Gate", icon: "shield" },
+    { view: "reports", label: "Inspection Reports", icon: "clip" },
     { view: "settings", label: "Platform Settings", icon: "sliders" },
     { view: "modules", label: "Module Registry", icon: "layers" },
     { view: "search", label: "Enterprise Search", icon: "search" },
@@ -177,6 +178,36 @@ export const SETTINGS_SEED: SettingDef[] = [
 export const SETTING_DEFAULTS: Record<string, SettingValue> = Object.fromEntries(
   SETTINGS_SEED.map((x) => [x.key, x.def]),
 );
+
+// ───────────────────────── philippines geo network ─────────────────────────
+
+export type PhRegion = "LUZON" | "VISAYAS" | "MINDANAO" | "PALAWAN";
+
+export interface PhSite {
+  id: string; code: string; name: string; region: PhRegion;
+  x: number; y: number; lat: string; lng: string; type: string;
+  status: SiteStatus; inspector: string; lastSync: string; cache: boolean;
+  note: string; report?: string;
+}
+
+export const PH_SITES: PhSite[] = [
+  { id: "ph01", code: "PH-01", name: "Bataan Refinery Turnaround", region: "LUZON", x: 116, y: 112, lat: "14.6530° N", lng: "120.2840° E", type: "Refinery", status: "active", inspector: "R. Vance", lastSync: "6 min", cache: true, note: "Exchanger bundle E-14 pull complete. Hot-work permit PTW-2210 open until 18:00.", report: "IR-2201" },
+  { id: "ph02", code: "PH-02", name: "Clark Solar Array · Block C", region: "LUZON", x: 148, y: 86, lat: "15.1860° N", lng: "120.5580° E", type: "Solar", status: "active", inspector: "M. Osei", lastSync: "14 min", cache: true, note: "String combiner audits 62/80. Thermal cam sweep on block C-7 tomorrow 05:30.", report: "IR-2204" },
+  { id: "ph03", code: "PH-03", name: "Manila Bay Reclamation Survey", region: "LUZON", x: 158, y: 121, lat: "14.5740° N", lng: "120.9710° E", type: "Survey", status: "attention", inspector: "R. Vance", lastSync: "51 min", cache: true, note: "Bathymetry delta +0.4 m at stake R-118. Awaiting hydrography re-shoot on calm sea window.", report: "IR-2197" },
+  { id: "ph04", code: "PH-04", name: "Batangas Port Crane Audit", region: "LUZON", x: 141, y: 143, lat: "13.7560° N", lng: "121.0580° E", type: "Crane", status: "active", inspector: "T. Brandt", lastSync: "22 min", cache: true, note: "STS crane 4 wire-rope NDT passed. Load test certificate issued C-8841." },
+  { id: "ph05", code: "PH-05", name: "Naga Grid Substation", region: "LUZON", x: 200, y: 119, lat: "13.6210° N", lng: "123.1920° E", type: "Substation", status: "pending", inspector: "M. Reyes", lastSync: "—", cache: false, note: "Proposed relay upgrade waypoint. Registration pending L5 approval." },
+  { id: "ph14", code: "PH-14", name: "Baguio Highlands Telemetry", region: "LUZON", x: 140, y: 54, lat: "16.4020° N", lng: "120.5960° E", type: "Telemetry", status: "active", inspector: "M. Osei", lastSync: "3 min", cache: true, note: "Ridge mast uplink 99.2% over 30 d. Battery bank derating flagged for Q-review." },
+  { id: "ph06", code: "PH-06", name: "Iloilo Water District Intake", region: "VISAYAS", x: 98, y: 238, lat: "10.7200° N", lng: "122.5450° E", type: "Water", status: "active", inspector: "M. Osei", lastSync: "9 min", cache: true, note: "Intake screen differential pressure normal. Chlorination log countersigned.", report: "IR-2208" },
+  { id: "ph07", code: "PH-07", name: "Cebu–Mactan Bridge Bearings", region: "VISAYAS", x: 139, y: 252, lat: "10.3090° N", lng: "123.9470° E", type: "Bridge", status: "attention", inspector: "R. Vance", lastSync: "1 h", cache: true, note: "Elastomeric bearing B-12 shear deformation 9 mm — above watch threshold. Weekly monitoring set.", report: "IR-2193" },
+  { id: "ph08", code: "PH-08", name: "Bohol Geotechnical Array", region: "VISAYAS", x: 158, y: 270, lat: "9.8500° N", lng: "124.2100° E", type: "Geotech", status: "active", inspector: "T. Brandt", lastSync: "31 min", cache: true, note: "Piezometer cluster P-3 baseline stable after storm recharge event." },
+  { id: "ph09", code: "PH-09", name: "Tacloban Wind Corridor", region: "VISAYAS", x: 171, y: 236, lat: "11.2430° N", lng: "125.0040° E", type: "Wind", status: "active", inspector: "R. Vance", lastSync: "18 min", cache: true, note: "Met-mast anemometry 6.8 m/s monthly mean. Typhoon-shutdown drill logged.", report: "IR-2210" },
+  { id: "ph13", code: "PH-13", name: "Puerto Princesa Relay Node", region: "PALAWAN", x: 44, y: 289, lat: "9.7390° N", lng: "118.7350° E", type: "Node", status: "pending", inspector: "M. Reyes", lastSync: "—", cache: false, note: "Proposed sync-relay waypoint on the Palawan corridor. Coordinates captured on-site, awaiting gate." },
+  { id: "ph10", code: "PH-10", name: "Davao Datacenter Uptime Audit", region: "MINDANAO", x: 203, y: 344, lat: "7.0730° N", lng: "125.6120° E", type: "Datacenter", status: "active", inspector: "M. Osei", lastSync: "2 min", cache: true, note: "Generator bank 2 load test passed at 92%. ATS transfer 11.4 s — within spec.", report: "IR-2212" },
+  { id: "ph11", code: "PH-11", name: "Cagayan de Oro Fleet Depot", region: "MINDANAO", x: 151, y: 310, lat: "8.4540° N", lng: "124.6310° E", type: "Depot", status: "offline", inspector: "T. Brandt", lastSync: "7 h", cache: true, note: "Node dark since 02:10 — 14 cached forms on device. Dispatch alerted, fuel run scheduled." },
+  { id: "ph12", code: "PH-12", name: "Zamboanga Marine Terminal", region: "MINDANAO", x: 95, y: 343, lat: "6.9080° N", lng: "122.0640° E", type: "Marine", status: "attention", inspector: "R. Vance", lastSync: "44 min", cache: false, note: "Fender F-7 impact damage logged; dive survey requested for pile toe inspection." },
+];
+
+export const PH_REGIONS: PhRegion[] = ["LUZON", "VISAYAS", "MINDANAO", "PALAWAN"];
 
 // ───────────────────────── projects ─────────────────────────
 
