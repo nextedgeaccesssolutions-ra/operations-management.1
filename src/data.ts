@@ -5,7 +5,7 @@
 export type Role = "admin" | "client" | "inspector";
 export type ViewKey =
   | "dashboard" | "gantt" | "scurve" | "geo" | "approvals"
-  | "modules" | "module" | "search" | "settings" | "reports";
+  | "modules" | "module" | "search" | "settings" | "reports" | "refrens";
 
 export type ProjectStatus = "on-track" | "at-risk" | "delayed" | "planning";
 
@@ -115,8 +115,8 @@ export const NAV_FOR: Record<Role, NavItem[]> = {
     { view: "scurve", label: "S-Curve Control", icon: "curve" },
     { view: "geo", label: "Geo Command", icon: "pin" },
     { view: "reports", label: "Inspection Reports", icon: "clip" },
+    { view: "refrens", label: "Refrens Integration", icon: "refrens" },
     { view: "approvals", label: "Approval Gate", icon: "shield" },
-    { view: "reports", label: "Inspection Reports", icon: "clip" },
     { view: "settings", label: "Platform Settings", icon: "sliders" },
     { view: "modules", label: "Module Registry", icon: "layers" },
     { view: "search", label: "Enterprise Search", icon: "search" },
@@ -127,6 +127,7 @@ export const NAV_FOR: Record<Role, NavItem[]> = {
     { view: "scurve", label: "S-Curve Review", icon: "curve" },
     { view: "geo", label: "Site Map", icon: "pin" },
     { view: "reports", label: "Inspection Reports", icon: "clip" },
+    { view: "refrens", label: "Refrens Integration", icon: "refrens" },
     { view: "approvals", label: "My Requests", icon: "shield" },
     { view: "modules", label: "Module Registry", icon: "layers" },
     { view: "search", label: "Enterprise Search", icon: "search" },
@@ -137,6 +138,7 @@ export const NAV_FOR: Record<Role, NavItem[]> = {
     { view: "scurve", label: "Progress S-Curve", icon: "curve" },
     { view: "geo", label: "Geo Drop", icon: "pin" },
     { view: "reports", label: "Field Reports", icon: "clip" },
+    { view: "refrens", label: "Refrens Integration", icon: "refrens" },
     { view: "approvals", label: "Approval Gate", icon: "shield" },
     { view: "settings", label: "Settings · gated", icon: "sliders" },
     { view: "modules", label: "Module Registry", icon: "layers" },

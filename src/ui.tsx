@@ -51,6 +51,7 @@ const P: Record<string, ReactNode> = {
   sun: <><circle cx="12" cy="12" r="4" /><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5 5l1.6 1.6M17.4 17.4L19 19M19 5l-1.6 1.6M6.6 17.4L5 19" /></>,
   moon: <path d="M20 13.5A8.5 8.5 0 0 1 10.5 4a7.5 7.5 0 1 0 9.5 9.5z" />,
   clip: <><path d="M8 12.5V7a4 4 0 0 1 8 0v8.5a5.5 5.5 0 0 1-11 0V8" /><path d="M8 12.5V8a1.5 1.5 0 0 1 3 0v7" strokeWidth="1.2" /></>,
+  refrens: <><path d="M4 12h4l2-3 4 6 2-3h4" /><circle cx="12" cy="12" r="9" strokeDasharray="2 2" /></>,
 };
 
 // ───────────────────────── theme toggle ─────────────────────────
