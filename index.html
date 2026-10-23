@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0a101d" />
+    <meta name="description" content="OPSDECK — field operations control platform. Dashboards, Gantt & S-curve planning, geo-tagging, approvals and runbooks for admins, clients and inspectors." />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="apple-touch-icon" href="/icon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <title>OPSDECK · Operations Control Platform</title>
+    <script>
+      // apply saved theme before first paint to avoid flash
+      (function () {
+        try {
+          var t = localStorage.getItem("opsdeck:theme");
+          var light = t === "light" || (!t && window.matchMedia("(prefers-color-scheme: light)").matches);
+          if (light) document.documentElement.classList.add("light");
+        } catch (e) { /* storage unavailable */ }
+      })();
+    </script>
+    <style>
+      html, body { margin: 0; padding: 0; background: #0a101d; }
+      html.light, html.light body { background: #eceff4; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

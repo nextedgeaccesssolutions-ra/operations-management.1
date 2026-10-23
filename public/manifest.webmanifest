@@ -1,0 +1,17 @@
+{
+  "name": "OPSDECK · Operations Control Platform",
+  "short_name": "OPSDECK",
+  "description": "Offline-first operations control: role portals, Gantt & S-curve planning, geo-tagging, governed approvals.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0a101d",
+  "theme_color": "#0a101d",
+  "categories": ["business", "productivity", "utilities"],
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}
