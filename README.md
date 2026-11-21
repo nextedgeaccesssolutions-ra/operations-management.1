@@ -1,5 +1,7 @@
 # OPSDECK · Web Apps for Operations Management
 
+> **Security / production-readiness notice:** OPSDECK is currently a front-end prototype. Demo credentials and role checks are bundled in client-side code, and application state is stored in the browser. These are not secure authentication, authorization, audit, or data-retention controls. Do not use real client, employee, project, pricing, safety, or operational records, and do not treat the portals as protected production access. A production release requires server-side identity and session management, server-enforced role/tenant authorization, protected APIs, durable storage, and independent security testing.
+
 Offline-first operations control platform with three separate role portals, governed approvals, geo-tagging (Philippines network), Gantt + S-curve planning, and 28 operational modules. Built with **Vite + React + TypeScript + Tailwind CSS v4** — deployable to **Vercel** straight from this repository.
 
 Repository: `https://github.com/infonextedgeaccesssolutions-neas/Web-Apps-for-Operations-Management.git`
